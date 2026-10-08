@@ -41,14 +41,18 @@ jobs:
           export PATH=$PATH:$ANDROID_HOME/platform-tools
 
           # Accept licenses
-          yes | sdkmanager --licenses > /dev/null 2>&1
+          mkdir -p $HOME/android-sdk/licenses
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $HOME/android-sdk/licenses/android-sdk-license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" >> $HOME/android-sdk/licenses/android-sdk-license
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > $HOME/android-sdk/licenses/android-sdk-preview-license
 
           # Install required components including AIDL
           sdkmanager \
             "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2" \
-            "ndk;25.2.9519653"
+            "ndk;25.2.9519653" \
+            --sdk_root=$HOME/android-sdk
 
           # Verify aidl is found
           echo "✅ AIDL location:"
