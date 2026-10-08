@@ -1,4 +1,3 @@
-
 [app]
 title = Spider Link
 package.name = spiderlink
@@ -12,7 +11,9 @@ fullscreen = 0
 android.permissions = INTERNET
 android.api = 33
 android.minapi = 21
-android.ndk = 25b
+android.ndk = 25.2.9519653
+android.sdk_path = /root/android-sdk
+android.ndk_path = /root/android-sdk/ndk/25.2.9519653
 android.archs = arm64-v8a
 android.allow_backup = True
 android.debug_artifact = apk
