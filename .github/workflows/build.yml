@@ -3,11 +3,11 @@ name: Build Spider Link APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # pinned version — most stable for buildozer
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'  # pinned — 3.14 breaks buildozer
+          python-version: '3.11'
 
       - name: Install system dependencies
         run: |
@@ -27,32 +27,55 @@ jobs:
             zlib1g-dev libncurses5-dev libncursesw5-dev \
             libffi-dev libssl-dev cmake build-essential
 
+      - name: Install Android SDK & AIDL manually
+        run: |
+          # Download and set up Android SDK from scratch
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          mv cmdline-tools latest
+
+          export ANDROID_HOME=$HOME/android-sdk
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+          export PATH=$PATH:$ANDROID_HOME/platform-tools
+
+          # Accept licenses
+          yes | sdkmanager --licenses > /dev/null 2>&1
+
+          # Install required components including AIDL
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "ndk;25.2.9519653"
+
+          # Verify aidl is found
+          echo "✅ AIDL location:"
+          find $ANDROID_HOME -name "aidl" 2>/dev/null
+
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
           pip install buildozer==1.5.0 cython==0.29.37 virtualenv
           pip install paho-mqtt pycryptodome
 
-      - name: Cache buildozer global directory
-        uses: actions/cache@v3
+      - name: Cache buildozer directory
+        uses: actions/cache@v4
         with:
           path: ~/.buildozer
           key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
 
-      - name: Install Android SDK build tools
-        run: |
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-            "build-tools;34.0.0" \
-            "platforms;android-33" \
-            "platform-tools"
-          echo "✅ Android build tools installed"
-          ls $ANDROID_HOME/build-tools/
-
       - name: Build APK
         run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          export ANDROIDNDK=$HOME/android-sdk/ndk/25.2.9519653
+          export ANDROIDSDK=$HOME/android-sdk
           export PATH=$PATH:~/.local/bin
-          export PATH=$PATH:$ANDROID_HOME/build-tools/34.0.0
+          export PATH=$PATH:$ANDROID_HOME/build-tools/33.0.2
+          export PATH=$PATH:$ANDROID_HOME/platform-tools
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           buildozer android debug
 
       - name: Upload APK
