@@ -79,9 +79,9 @@ jobs:
 
       - name: Build APK
         run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          export ANDROIDNDK=$HOME/android-sdk/ndk/25.2.9519653
-          export ANDROIDSDK=$HOME/android-sdk
+          export ANDROID_HOME=$GITHUB_WORKSPACE/android-sdk
+          export ANDROIDSDK=$GITHUB_WORKSPACE/android-sdk
+          export ANDROIDNDK=$GITHUB_WORKSPACE/android-sdk/ndk/25.2.9519653
           export PATH=$PATH:~/.local/bin
           export PATH=$PATH:$ANDROID_HOME/build-tools/33.0.2
           export PATH=$PATH:$ANDROID_HOME/platform-tools
