@@ -39,25 +39,39 @@ jobs:
           pip install buildozer==1.5.0 cython==0.29.37 virtualenv
           pip install paho-mqtt pycryptodome
 
-      - name: Cache buildozer downloads
+      - name: Cache buildozer directory
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
           key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
 
+      - name: Pre-accept Android SDK licenses
+        run: |
+          # Write licenses to buildozer's SDK path BEFORE it runs
+          # so sdkmanager never asks for confirmation
+          SDK_PATH="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_PATH/licenses"
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >  "$SDK_PATH/licenses/android-sdk-license"
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$SDK_PATH/licenses/android-sdk-license"
+          echo "8933bad161af4408943b284a20b2b669f296802a" >> "$SDK_PATH/licenses/android-sdk-license"
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" >  "$SDK_PATH/licenses/android-sdk-preview-license"
+          echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >  "$SDK_PATH/licenses/google-gdk-license"
+          echo "✅ Licenses written to $SDK_PATH/licenses/"
+          ls "$SDK_PATH/licenses/"
+
       - name: Pre-download Android NDK r25b
         run: |
-          mkdir -p ~/.buildozer/android/platform
-          cd ~/.buildozer/android/platform
-
-          # Download correct NDK version
-          if [ ! -d "android-ndk-r25b" ]; then
+          NDK_PATH="$HOME/.buildozer/android/platform/android-ndk-r25b"
+          if [ ! -d "$NDK_PATH" ]; then
             echo "Downloading NDK r25b..."
-            wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+            mkdir -p "$HOME/.buildozer/android/platform"
+            cd "$HOME/.buildozer/android/platform"
+            wget -q --show-progress \
+              https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
             unzip -q android-ndk-r25b-linux.zip
             rm android-ndk-r25b-linux.zip
-            echo "✅ NDK ready"
+            echo "✅ NDK ready at $NDK_PATH"
           else
             echo "✅ NDK already cached"
           fi
