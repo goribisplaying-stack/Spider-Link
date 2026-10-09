@@ -42,89 +42,10 @@ jobs:
           mkdir -p "$PLATFORM"
 
           # Symlink SDK and NDK
-          ln -sf "$SDK"  "$PLATFORM/android-sdk"
-          ln -sf "$NDK"  "$PLATFORM/android-ndk-r27b"
+          ln -sf "$SDK" "$PLATFORM/android-sdk"
+          ln -sf "$NDK" "$PLATFORM/android-ndk-r27b"
 
           # Fix sdkmanager path — buildozer expects old tools/bin/ structure
-          # but pre-installed SDK uses new cmdline-tools/ structure
-          mkdir -p "$SDK/tools/bin"
-          ln -sf "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/tools/bin/sdkmanager"
-          ln -sf "$SDK/cmdline-tools/latest/bin/avdmanager"  "$SDK/tools/bin/avdmanager"
-          echo "✅ sdkmanager at: $(ls $SDK/tools/bin/)"
-
-          # Accept licenses
-          mkdir -p "$SDK/licenses"
-          printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4408943b284a20b2b669f296802a\nd56f5187479451eabf01fb78af6dfcb131a6481e" \
-            > "$SDK/licenses/android-sdk-license"
-          printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" \
-            > "$SDK/licenses/android-sdk-preview-license"
-          echo "✅ Licenses written"
-
-      - name: Cache buildozer
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: buildozer-${{ runner.os }}-
-
-      - name: Build APK
-        run: |
-          export PATH=$PATH:~/.local/bin
-          export ANDROID_HOME=/usr/local/lib/android/sdk
-          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          export ANDROIDSDK=/usr/local/lib/android/sdk
-          export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
-          export ANDROIDNDKVER=r27b
-          buildozer android debug
-    name: Build Spider Link APK
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y \
-            git zip unzip \
-            autoconf libtool pkg-config \
-            zlib1g-dev libncurses5-dev libncursesw5-dev \
-            cmake libffi-dev libssl-dev build-essential
-
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install buildozer==1.5.0 cython==0.29.37
-          pip install paho-mqtt pycryptodome
-
-      - name: Set up SDK and NDK for buildozer
-        run: |
-          SDK="/usr/local/lib/android/sdk"
-          NDK="$SDK/ndk/27.3.13750724"
-          PLATFORM="$HOME/.buildozer/android/platform"
-
-          mkdir -p "$PLATFORM"
-
-          # Symlink SDK and NDK
-          ln -sf "$SDK"  "$PLATFORM/android-sdk"
-          ln -sf "$NDK"  "$PLATFORM/android-ndk-r27b"
-
-          # Fix sdkmanager path — buildozer expects old tools/bin/ structure
-          # but pre-installed SDK uses new cmdline-tools/ structure
           mkdir -p "$SDK/tools/bin"
           ln -sf "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/tools/bin/sdkmanager"
           ln -sf "$SDK/cmdline-tools/latest/bin/avdmanager"  "$SDK/tools/bin/avdmanager"
@@ -163,7 +84,6 @@ jobs:
             echo "=== LAST 60 LINES OF BUILD LOG ==="
             tail -60 "$LOG"
           fi
-          # Also search for error in buildozer output
           find /home/runner/.buildozer -name "*.log" 2>/dev/null | while read f; do
             echo "=== $f ==="
             grep -i "error\|exception\|failed" "$f" | tail -20
