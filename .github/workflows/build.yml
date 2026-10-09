@@ -91,8 +91,11 @@ jobs:
           ls -la bin/ 2>/dev/null || echo "bin/ not found"
           echo "=== Searching entire workspace for APK ==="
           find /home/runner/work/Spider-Link -name "*.apk" 2>/dev/null
-          echo "=== Last 30 lines of buildozer output ==="
-          tail -30 /tmp/buildozer_full.txt 2>/dev/null
+          echo "=== FULL BUILDOZER OUTPUT - ERROR SEARCH ==="
+          grep -n "error\|Error\|ERROR\|exception\|FAILED\|stderr\|No such\|cannot\|Cannot\|undefined\|Undefined" \
+            /tmp/buildozer_full.txt 2>/dev/null | tail -50
+          echo "=== LINES 200 BEFORE END ==="
+          tail -200 /tmp/buildozer_full.txt 2>/dev/null | head -150
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
