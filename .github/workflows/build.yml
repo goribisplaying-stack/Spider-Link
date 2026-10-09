@@ -32,8 +32,22 @@ jobs:
           pip install --upgrade pip
           pip install buildozer==1.5.0 cython==0.29.33
           pip install paho-mqtt pycryptodome
-          # Prevent p4a from using broken Cython versions internally
-          pip install "Cython<3.0"
+
+      - name: Force Python 3.9 system-wide
+        run: |
+          # p4a creates isolated build envs using system python3
+          # which is 3.14 on this runner — we override it to 3.9
+          sudo ln -sf $(which python3.9) /usr/local/bin/python3
+          sudo ln -sf $(which python3.9) /usr/local/bin/python
+          echo "✅ python3 is now: $(python3 --version)"
+
+          # Disable pip build isolation globally so our Cython 0.29.33 is always used
+          mkdir -p ~/.config/pip
+          cat > ~/.config/pip/pip.conf << 'EOF'
+          [global]
+          no-build-isolation = true
+          EOF
+          echo "✅ pip build isolation disabled"
 
       - name: Set up SDK and NDK for buildozer
         run: |
