@@ -41,23 +41,24 @@ jobs:
 
           mkdir -p "$PLATFORM"
 
-          # Symlink SDK — confirmed working in last run
-          ln -sf "$SDK" "$PLATFORM/android-sdk"
+          # Symlink SDK and NDK
+          ln -sf "$SDK"  "$PLATFORM/android-sdk"
+          ln -sf "$NDK"  "$PLATFORM/android-ndk-r27b"
 
-          # Symlink NDK — name must match android.ndk = 27b in spec
-          ln -sf "$NDK" "$PLATFORM/android-ndk-r27b"
+          # Fix sdkmanager path — buildozer expects old tools/bin/ structure
+          # but pre-installed SDK uses new cmdline-tools/ structure
+          mkdir -p "$SDK/tools/bin"
+          ln -sf "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/tools/bin/sdkmanager"
+          ln -sf "$SDK/cmdline-tools/latest/bin/avdmanager"  "$SDK/tools/bin/avdmanager"
+          echo "✅ sdkmanager at: $(ls $SDK/tools/bin/)"
 
-          # Accept licenses on the real SDK path
+          # Accept licenses
           mkdir -p "$SDK/licenses"
           printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4408943b284a20b2b669f296802a\nd56f5187479451eabf01fb78af6dfcb131a6481e" \
             > "$SDK/licenses/android-sdk-license"
           printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" \
             > "$SDK/licenses/android-sdk-preview-license"
-
-          # Verify
-          echo "=== SDK symlink ===" && ls "$PLATFORM/android-sdk/" | head -5
-          echo "=== NDK symlink ===" && ls "$PLATFORM/android-ndk-r27b/" | head -5
-          echo "=== Licenses ===" && ls "$SDK/licenses/"
+          echo "✅ Licenses written"
 
       - name: Cache buildozer
         uses: actions/cache@v4
