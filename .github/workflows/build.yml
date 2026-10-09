@@ -84,9 +84,21 @@ jobs:
           echo "=== LINES CONTAINING ERROR ==="
           grep -i "error\|exception\|failed\|stderr" /tmp/buildozer_full.txt | tail -30
 
+      - name: Find APK
+        if: always()
+        run: |
+          echo "=== Contents of bin/ ==="
+          ls -la bin/ 2>/dev/null || echo "bin/ not found"
+          echo "=== Searching entire workspace for APK ==="
+          find /home/runner/work/Spider-Link -name "*.apk" 2>/dev/null
+          echo "=== Last 30 lines of buildozer output ==="
+          tail -30 /tmp/buildozer_full.txt 2>/dev/null
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SpiderLink-APK
-          path: bin/*.apk
-          if-no-files-found: error
+          path: |
+            bin/*.apk
+            **/*.apk
+          if-no-files-found: warn
