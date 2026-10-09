@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'     # Python 3.9 is most stable for buildozer
+          python-version: '3.9'
 
       - name: Install system dependencies
         run: |
@@ -30,8 +30,25 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer==1.4.0 cython==0.29.33
+          pip install buildozer==1.5.0 cython==0.29.37
           pip install paho-mqtt pycryptodome
+
+      - name: Accept Android SDK licenses
+        run: |
+          # Use the pre-installed SDK that already exists on the runner
+          SDK="/usr/local/lib/android/sdk"
+          mkdir -p "$SDK/licenses"
+          printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4408943b284a20b2b669f296802a\nd56f5187479451eabf01fb78af6dfcb131a6481e" \
+            > "$SDK/licenses/android-sdk-license"
+          printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" \
+            > "$SDK/licenses/android-sdk-preview-license"
+          echo "✅ Licenses written"
+
+          # Point buildozer to the pre-installed SDK & NDK
+          mkdir -p ~/.buildozer/android/platform
+          ln -sf "$SDK" ~/.buildozer/android/platform/android-sdk
+          ln -sf "$SDK/ndk/27.3.13750724" ~/.buildozer/android/platform/android-ndk-r25b
+          echo "✅ SDK symlinked: $(ls ~/.buildozer/android/platform/)"
 
       - name: Cache buildozer
         uses: actions/cache@v4
@@ -40,62 +57,13 @@ jobs:
           key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
 
-      - name: Set up Java 8 (for old sdkmanager)
-        uses: actions/setup-java@v5
-        with:
-          java-version: '8'
-          distribution: 'temurin'
-
-      - name: Pre-install Android SDK with correct structure
-        run: |
-          SDK="$HOME/.buildozer/android/platform/android-sdk"
-          mkdir -p "$SDK"
-
-          # Download OLD sdk-tools (has tools/bin/sdkmanager buildozer expects)
-          cd "$SDK"
-          wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
-          unzip -q sdk-tools-linux-4333796.zip
-          rm sdk-tools-linux-4333796.zip
-
-          # Write licenses so sdkmanager never prompts
-          mkdir -p "$SDK/licenses"
-          printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4408943b284a20b2b669f296802a\nd56f5187479451eabf01fb78af6dfcb131a6481e" \
-            > "$SDK/licenses/android-sdk-license"
-          printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" \
-            > "$SDK/licenses/android-sdk-preview-license"
-
-          # Install required SDK components using Java 8
-          "$SDK/tools/bin/sdkmanager" --sdk_root="$SDK" \
-            "platform-tools" \
-            "platforms;android-31" \
-            "build-tools;31.0.0"
-
-          echo "✅ SDK ready"
-
-      - name: Switch to Java 11 for buildozer
-        uses: actions/setup-java@v5
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-
-      - name: Pre-download NDK r25b
-        run: |
-          NDK_PATH="$HOME/.buildozer/android/platform/android-ndk-r25b"
-          if [ ! -d "$NDK_PATH" ]; then
-            echo "Downloading NDK r25b..."
-            mkdir -p "$HOME/.buildozer/android/platform"
-            cd "$HOME/.buildozer/android/platform"
-            wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-            unzip -q android-ndk-r25b-linux.zip
-            rm android-ndk-r25b-linux.zip
-            echo "✅ NDK ready"
-          else
-            echo "✅ NDK cached"
-          fi
-
       - name: Build APK
         run: |
           export PATH=$PATH:~/.local/bin
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
+          export ANDROIDSDK=/usr/local/lib/android/sdk
           buildozer android debug
 
       - name: Upload APK
