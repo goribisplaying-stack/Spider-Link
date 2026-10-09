@@ -46,16 +46,33 @@ jobs:
           key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
 
-      - name: Pre-accept Android licenses
+      - name: Pre-install Android SDK with correct structure
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          SDK="$HOME/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK"
+
+          # Download OLD sdk-tools (has tools/bin/sdkmanager buildozer expects)
+          cd "$SDK"
+          wget -q https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+          unzip -q sdk-tools-linux-4333796.zip
+          rm sdk-tools-linux-4333796.zip
+
+          # Write licenses so sdkmanager never prompts
+          mkdir -p "$SDK/licenses"
           printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4408943b284a20b2b669f296802a\nd56f5187479451eabf01fb78af6dfcb131a6481e" \
-            > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+            > "$SDK/licenses/android-sdk-license"
           printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" \
-            > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-          printf "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" \
-            > ~/.buildozer/android/platform/android-sdk/licenses/google-gdk-license
-          echo "✅ Licenses written"
+            > "$SDK/licenses/android-sdk-preview-license"
+
+          # Install required SDK components
+          export JAVA_HOME=$JAVA_HOME
+          "$SDK/tools/bin/sdkmanager" --sdk_root="$SDK" \
+            "platform-tools" \
+            "platforms;android-31" \
+            "build-tools;31.0.0"
+
+          echo "✅ SDK ready"
+          ls "$SDK/tools/bin/"
 
       - name: Pre-download NDK r25b
         run: |
