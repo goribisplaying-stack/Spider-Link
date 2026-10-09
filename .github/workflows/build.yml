@@ -13,12 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Java 11
-        uses: actions/setup-java@v5
-        with:
-          java-version: '11'        # Java 11 + buildozer 1.4 is proven combo
-          distribution: 'temurin'
-
       - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
@@ -46,6 +40,12 @@ jobs:
           key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-${{ runner.os }}-
 
+      - name: Set up Java 8 (for old sdkmanager)
+        uses: actions/setup-java@v5
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+
       - name: Pre-install Android SDK with correct structure
         run: |
           SDK="$HOME/.buildozer/android/platform/android-sdk"
@@ -64,15 +64,19 @@ jobs:
           printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" \
             > "$SDK/licenses/android-sdk-preview-license"
 
-          # Install required SDK components
-          export JAVA_HOME=$JAVA_HOME
+          # Install required SDK components using Java 8
           "$SDK/tools/bin/sdkmanager" --sdk_root="$SDK" \
             "platform-tools" \
             "platforms;android-31" \
             "build-tools;31.0.0"
 
           echo "✅ SDK ready"
-          ls "$SDK/tools/bin/"
+
+      - name: Switch to Java 11 for buildozer
+        uses: actions/setup-java@v5
+        with:
+          java-version: '11'
+          distribution: 'temurin'
 
       - name: Pre-download NDK r25b
         run: |
