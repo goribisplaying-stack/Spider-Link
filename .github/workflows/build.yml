@@ -47,8 +47,13 @@ jobs:
           # Point buildozer to the pre-installed SDK & NDK
           mkdir -p ~/.buildozer/android/platform
           ln -sf "$SDK" ~/.buildozer/android/platform/android-sdk
-          ln -sf "$SDK/ndk/27.3.13750724" ~/.buildozer/android/platform/android-ndk-r25b
-          echo "✅ SDK symlinked: $(ls ~/.buildozer/android/platform/)"
+
+          # Symlink NDK with the exact name buildozer constructs internally
+          NDK_REAL="$SDK/ndk/27.3.13750724"
+          ln -sf "$NDK_REAL" ~/.buildozer/android/platform/android-ndk-r27b
+          ln -sf "$NDK_REAL" ~/.buildozer/android/platform/android-ndk-r27.3.13750724
+          echo "✅ Symlinks ready:"
+          ls ~/.buildozer/android/platform/
 
       - name: Cache buildozer
         uses: actions/cache@v4
@@ -62,8 +67,9 @@ jobs:
           export PATH=$PATH:~/.local/bin
           export ANDROID_HOME=/usr/local/lib/android/sdk
           export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
           export ANDROIDSDK=/usr/local/lib/android/sdk
+          export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
+          export ANDROIDNDKVER=r27b
           buildozer android debug
 
       - name: Upload APK
