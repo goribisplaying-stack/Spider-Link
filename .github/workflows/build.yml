@@ -30,8 +30,10 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer==1.5.0 cython==0.29.37
+          pip install buildozer==1.5.0 cython==0.29.33
           pip install paho-mqtt pycryptodome
+          # Prevent p4a from using broken Cython versions internally
+          pip install "Cython<3.0"
 
       - name: Set up SDK and NDK for buildozer
         run: |
