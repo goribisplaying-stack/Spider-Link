@@ -74,20 +74,15 @@ jobs:
           export ANDROIDSDK=/usr/local/lib/android/sdk
           export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
           export ANDROIDNDKVER=r27b
-          buildozer android debug
+          buildozer android debug 2>&1 | tee /tmp/buildozer_full.txt
 
       - name: Show build error if failed
         if: failure()
         run: |
-          LOG=$(find /home/runner/work/Spider-Link/Spider-Link/.buildozer -name "*.log" 2>/dev/null | head -1)
-          if [ -f "$LOG" ]; then
-            echo "=== LAST 60 LINES OF BUILD LOG ==="
-            tail -60 "$LOG"
-          fi
-          find /home/runner/.buildozer -name "*.log" 2>/dev/null | while read f; do
-            echo "=== $f ==="
-            grep -i "error\|exception\|failed" "$f" | tail -20
-          done
+          echo "=== LAST 80 LINES OF FULL BUILDOZER OUTPUT ==="
+          tail -80 /tmp/buildozer_full.txt
+          echo "=== LINES CONTAINING ERROR ==="
+          grep -i "error\|exception\|failed\|stderr" /tmp/buildozer_full.txt | tail -30
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
