@@ -33,27 +33,31 @@ jobs:
           pip install buildozer==1.5.0 cython==0.29.37
           pip install paho-mqtt pycryptodome
 
-      - name: Accept Android SDK licenses
+      - name: Set up SDK and NDK for buildozer
         run: |
-          # Use the pre-installed SDK that already exists on the runner
           SDK="/usr/local/lib/android/sdk"
+          NDK="$SDK/ndk/27.3.13750724"
+          PLATFORM="$HOME/.buildozer/android/platform"
+
+          mkdir -p "$PLATFORM"
+
+          # Symlink SDK — confirmed working in last run
+          ln -sf "$SDK" "$PLATFORM/android-sdk"
+
+          # Symlink NDK — name must match android.ndk = 27b in spec
+          ln -sf "$NDK" "$PLATFORM/android-ndk-r27b"
+
+          # Accept licenses on the real SDK path
           mkdir -p "$SDK/licenses"
           printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4408943b284a20b2b669f296802a\nd56f5187479451eabf01fb78af6dfcb131a6481e" \
             > "$SDK/licenses/android-sdk-license"
           printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" \
             > "$SDK/licenses/android-sdk-preview-license"
-          echo "✅ Licenses written"
 
-          # Point buildozer to the pre-installed SDK & NDK
-          mkdir -p ~/.buildozer/android/platform
-          ln -sf "$SDK" ~/.buildozer/android/platform/android-sdk
-
-          # Symlink NDK with the exact name buildozer constructs internally
-          NDK_REAL="$SDK/ndk/27.3.13750724"
-          ln -sf "$NDK_REAL" ~/.buildozer/android/platform/android-ndk-r27b
-          ln -sf "$NDK_REAL" ~/.buildozer/android/platform/android-ndk-r27.3.13750724
-          echo "✅ Symlinks ready:"
-          ls ~/.buildozer/android/platform/
+          # Verify
+          echo "=== SDK symlink ===" && ls "$PLATFORM/android-sdk/" | head -5
+          echo "=== NDK symlink ===" && ls "$PLATFORM/android-ndk-r27b/" | head -5
+          echo "=== Licenses ===" && ls "$SDK/licenses/"
 
       - name: Cache buildozer
         uses: actions/cache@v4
