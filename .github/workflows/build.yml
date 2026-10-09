@@ -25,7 +25,10 @@ jobs:
             git zip unzip \
             autoconf automake libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev \
-            cmake libffi-dev libssl-dev build-essential
+            cmake libffi-dev libssl-dev build-essential \
+            libbz2-dev libreadline-dev libsqlite3-dev \
+            liblzma-dev libgdbm-dev libgdbm-compat-dev \
+            uuid-dev tk-dev
 
       - name: Install Python dependencies
         run: |
