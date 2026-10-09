@@ -13,10 +13,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.9
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Install system dependencies
         run: |
@@ -30,24 +30,16 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer==1.5.0 cython==0.29.33
+          pip install buildozer cython==3.0.10
           pip install paho-mqtt pycryptodome
 
       - name: Force Python 3.9 system-wide
         run: |
-          # p4a creates isolated build envs using system python3
-          # which is 3.14 on this runner — we override it to 3.9
-          sudo ln -sf $(which python3.9) /usr/local/bin/python3
-          sudo ln -sf $(which python3.9) /usr/local/bin/python
+          sudo ln -sf $(which python3.11) /usr/local/bin/python3
+          sudo ln -sf $(which python3.11) /usr/local/bin/python
           echo "✅ python3 is now: $(python3 --version)"
-
-          # Disable pip build isolation globally so our Cython 0.29.33 is always used
-          mkdir -p ~/.config/pip
-          cat > ~/.config/pip/pip.conf << 'EOF'
-          [global]
-          no-build-isolation = true
-          EOF
-          echo "✅ pip build isolation disabled"
+          # Set env var so p4a's pip also disables build isolation
+          echo "PIP_NO_BUILD_ISOLATION=1" >> $GITHUB_ENV
 
       - name: Set up SDK and NDK for buildozer
         run: |
