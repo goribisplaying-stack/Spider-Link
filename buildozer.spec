@@ -5,8 +5,8 @@ package.domain = org.spiderlink
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
-requirements = python3,kivy==2.3.0,paho-mqtt,pycryptodome
-p4a.branch = develop
+requirements = python3==3.12.7,kivy==2.3.0,paho-mqtt,pycryptodome
+p4a.branch = master
 orientation = portrait
 fullscreen = 0
 android.permissions = INTERNET
