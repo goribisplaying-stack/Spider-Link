@@ -6,18 +6,18 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0
 requirements = python3==3.12.7,hostpython3==3.12.7,kivy==2.3.0,paho-mqtt,pycryptodome
-p4a.branch = master
 orientation = portrait
 fullscreen = 0
 android.permissions = INTERNET
-android.api = 31
-android.minapi = 21
+android.api = 33
+android.minapi = 26
 android.ndk = 27b
 android.sdk_path = /usr/local/lib/android/sdk
 android.ndk_path = /usr/local/lib/android/sdk/ndk/27.3.13750724
 android.archs = arm64-v8a
 android.allow_backup = True
 android.debug_artifact = apk
+p4a.branch = master
 
 [buildozer]
 log_level = 2
