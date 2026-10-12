@@ -82,10 +82,7 @@ jobs:
           CLANG_DIR="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
           for COMPILER in clang clang++; do
             sudo mv "$CLANG_DIR/$COMPILER" "$CLANG_DIR/${COMPILER}.real"
-            sudo tee "$CLANG_DIR/$COMPILER" > /dev/null << EOF
-#!/bin/bash
-exec "$CLANG_DIR/${COMPILER}.real" -Wno-incompatible-function-pointer-types "\$@"
-EOF
+            printf '#!/bin/bash\nexec "%s/%s.real" -Wno-incompatible-function-pointer-types "$@"\n' "$CLANG_DIR" "$COMPILER" | sudo tee "$CLANG_DIR/$COMPILER" > /dev/null
             sudo chmod +x "$CLANG_DIR/$COMPILER"
             echo "✅ Patched $COMPILER"
           done
