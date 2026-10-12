@@ -86,6 +86,13 @@ jobs:
           export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
           export ANDROIDNDKVER=r27b
           buildozer android debug 2>&1 | tee /tmp/buildozer_full.txt
+          echo "=== BUILD DONE, exit code: $? ==="
+          echo "=== Searching for APK ==="
+          find /home/runner -name "*.apk" 2>/dev/null
+          echo "=== bin/ contents ==="
+          ls -la bin/ 2>/dev/null || echo "bin/ empty or missing"
+          echo "=== .buildozer/android/platform/build*/dists/*/bin/ ==="
+          find .buildozer -name "*.apk" 2>/dev/null || echo "No APK in .buildozer"
 
       - name: Show build error if failed
         if: failure()
@@ -114,5 +121,5 @@ jobs:
           name: SpiderLink-APK
           path: |
             bin/*.apk
-            **/*.apk
+            .buildozer/**/*.apk
           if-no-files-found: warn
