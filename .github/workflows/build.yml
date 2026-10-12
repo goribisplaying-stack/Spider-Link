@@ -77,6 +77,19 @@ jobs:
           key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v2
           restore-keys: buildozer-${{ runner.os }}-
 
+      - name: Patch NDK clang for Kivy compatibility
+        run: |
+          CLANG_DIR="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          for COMPILER in clang clang++; do
+            sudo mv "$CLANG_DIR/$COMPILER" "$CLANG_DIR/${COMPILER}.real"
+            sudo tee "$CLANG_DIR/$COMPILER" > /dev/null << EOF
+#!/bin/bash
+exec "$CLANG_DIR/${COMPILER}.real" -Wno-incompatible-function-pointer-types "\$@"
+EOF
+            sudo chmod +x "$CLANG_DIR/$COMPILER"
+            echo "✅ Patched $COMPILER"
+          done
+
       - name: Build APK
         run: |
           export PATH=$PATH:~/.local/bin
@@ -85,9 +98,6 @@ jobs:
           export ANDROIDSDK=/usr/local/lib/android/sdk
           export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
           export ANDROIDNDKVER=r27b
-          # Fix Kivy 2.3.0 incompatible function pointer types with NDK 27 clang
-          export CFLAGS="-Wno-incompatible-function-pointer-types"
-          export CXXFLAGS="-Wno-incompatible-function-pointer-types"
           buildozer -v android debug 2>&1 | tee /tmp/buildozer_full.txt; true
 
       - name: Force gradle build if APK missing
