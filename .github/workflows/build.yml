@@ -108,10 +108,8 @@ jobs:
       - name: Show build error if failed
         if: failure()
         run: |
-          echo "=== LAST 80 LINES OF FULL BUILDOZER OUTPUT ==="
-          tail -80 /tmp/buildozer_full.txt
-          echo "=== LINES CONTAINING ERROR ==="
-          grep -i "error\|exception\|failed\|stderr" /tmp/buildozer_full.txt | tail -30
+          echo "=== FIRST BUILD ERRORS (with context) ==="
+          grep -n -m 4 -B 3 -A 8 -E "error:|What went wrong|ModuleNotFoundError|Traceback" /tmp/buildozer_full.txt | cut -c1-300
 
       - name: Find APK
         if: always()
