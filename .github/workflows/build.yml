@@ -80,12 +80,13 @@ jobs:
       - name: Patch NDK clang for Kivy compatibility
         run: |
           CLANG_DIR="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          for COMPILER in clang clang++; do
-            sudo mv "$CLANG_DIR/$COMPILER" "$CLANG_DIR/${COMPILER}.real"
-            printf '#!/bin/bash\nexec "%s/%s.real" -Wno-incompatible-function-pointer-types "$@"\n' "$CLANG_DIR" "$COMPILER" | sudo tee "$CLANG_DIR/$COMPILER" > /dev/null
-            sudo chmod +x "$CLANG_DIR/$COMPILER"
-            echo "✅ Patched $COMPILER"
-          done
+          # Only wrap "clang". clang++ is a symlink to it, so the wrapper checks
+          # its own invoked name and adds --driver-mode=g++ to keep C++ mode.
+          sudo mv "$CLANG_DIR/clang" "$CLANG_DIR/clang.real"
+          printf '#!/bin/bash\nD="%s"\nM=""\ncase "$(basename "$0")" in *++*) M="--driver-mode=g++";; esac\nexec "$D/clang.real" $M -Wno-incompatible-function-pointer-types "$@"\n' "$CLANG_DIR" | sudo tee "$CLANG_DIR/clang" > /dev/null
+          sudo chmod +x "$CLANG_DIR/clang"
+          echo "✅ Patched clang"
+          ls -la "$CLANG_DIR" | grep -E "clang" | head -20
 
       - name: Build APK
         run: |
