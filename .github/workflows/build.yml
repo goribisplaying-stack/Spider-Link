@@ -95,24 +95,8 @@ jobs:
           export ANDROIDSDK=/usr/local/lib/android/sdk
           export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
           export ANDROIDNDKVER=r27b
-          buildozer -v android debug 2>&1 | tee /tmp/buildozer_full.txt; true
-
-      - name: Force gradle build if APK missing
-        run: |
-          # Find the gradle project buildozer created
-          GRADLE_DIR=$(find .buildozer -name "gradlew" 2>/dev/null | head -1 | xargs dirname)
-          if [ -n "$GRADLE_DIR" ]; then
-            echo "✅ Found gradle project at: $GRADLE_DIR"
-            cd "$GRADLE_DIR"
-            chmod +x gradlew
-            ./gradlew assembleDebug 2>&1
-            echo "=== APK search after gradle ==="
-            find . -name "*.apk" 2>/dev/null
-          else
-            echo "❌ No gradle project found"
-            echo "=== .buildozer structure ==="
-            find .buildozer -maxdepth 4 -type d 2>/dev/null
-          fi
+          set -o pipefail
+          buildozer -v android debug 2>&1 | tee /tmp/buildozer_full.txt
 
       - name: Collect APK
         run: |
