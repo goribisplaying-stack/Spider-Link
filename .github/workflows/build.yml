@@ -7,126 +7,45 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # ubuntu-latest is 24.04 which breaks autoconf
+    runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install system dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y \
-            git zip unzip \
-            autoconf automake libtool pkg-config \
-            zlib1g-dev libncurses5-dev libncursesw5-dev \
-            cmake libffi-dev libssl-dev build-essential \
-            libbz2-dev libreadline-dev libsqlite3-dev \
-            liblzma-dev libgdbm-dev libgdbm-compat-dev \
-            uuid-dev tk-dev
+          sudo apt-get install -y git zip unzip openjdk-17-jdk \
+            autoconf automake libtool pkg-config zlib1g-dev \
+            libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
 
-      - name: Install Python dependencies
+      - name: Install buildozer
         run: |
           pip install --upgrade pip
-          pip install buildozer cython==3.0.10
-          pip install paho-mqtt pycryptodome
-
-      - name: Force Python 3.9 system-wide
-        run: |
-          sudo ln -sf $(which python3.11) /usr/local/bin/python3
-          sudo ln -sf $(which python3.11) /usr/local/bin/python
-          echo "✅ python3 is now: $(python3 --version)"
-          # Set env var so p4a's pip also disables build isolation
-          echo "PIP_NO_BUILD_ISOLATION=1" >> $GITHUB_ENV
-
-      - name: Set up SDK and NDK for buildozer
-        run: |
-          SDK="/usr/local/lib/android/sdk"
-          NDK="$SDK/ndk/27.3.13750724"
-          PLATFORM="$HOME/.buildozer/android/platform"
-
-          mkdir -p "$PLATFORM"
-
-          # Symlink SDK and NDK
-          ln -sf "$SDK" "$PLATFORM/android-sdk"
-          ln -sf "$NDK" "$PLATFORM/android-ndk-r27b"
-
-          # Fix sdkmanager path — buildozer expects old tools/bin/ structure
-          mkdir -p "$SDK/tools/bin"
-          ln -sf "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/tools/bin/sdkmanager"
-          ln -sf "$SDK/cmdline-tools/latest/bin/avdmanager"  "$SDK/tools/bin/avdmanager"
-          echo "✅ sdkmanager at: $(ls $SDK/tools/bin/)"
-
-          # Accept licenses
-          mkdir -p "$SDK/licenses"
-          printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4408943b284a20b2b669f296802a\nd56f5187479451eabf01fb78af6dfcb131a6481e" \
-            > "$SDK/licenses/android-sdk-license"
-          printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910" \
-            > "$SDK/licenses/android-sdk-preview-license"
-          echo "✅ Licenses written"
+          pip install buildozer "cython<3.1"
 
       - name: Cache buildozer
         uses: actions/cache@v4
         with:
-          path: ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}-v2
-          restore-keys: buildozer-${{ runner.os }}-
-
-      - name: Patch NDK clang for Kivy compatibility
-        run: |
-          CLANG_DIR="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          # Only wrap "clang". clang++ is a symlink to it, so the wrapper checks
-          # its own invoked name and adds --driver-mode=g++ to keep C++ mode.
-          sudo mv "$CLANG_DIR/clang" "$CLANG_DIR/clang.real"
-          printf '#!/bin/bash\nD="%s"\nM=""\ncase "$(basename "$0")" in *++*) M="--driver-mode=g++";; esac\nexec "$D/clang.real" $M -Wno-incompatible-function-pointer-types "$@"\n' "$CLANG_DIR" | sudo tee "$CLANG_DIR/clang" > /dev/null
-          sudo chmod +x "$CLANG_DIR/clang"
-          echo "✅ Patched clang"
-          ls -la "$CLANG_DIR" | grep -E "clang" | head -20
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-${{ hashFiles('buildozer.spec') }}-v3
 
       - name: Build APK
         run: |
-          export PATH=$PATH:~/.local/bin
-          export ANDROID_HOME=/usr/local/lib/android/sdk
-          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          export ANDROIDSDK=/usr/local/lib/android/sdk
-          export ANDROIDNDK=/usr/local/lib/android/sdk/ndk/27.3.13750724
-          export ANDROIDNDKVER=r27b
           set -o pipefail
           buildozer -v android debug 2>&1 | tee /tmp/buildozer_full.txt
 
-      - name: Collect APK
-        run: |
-          mkdir -p bin
-          find /home/runner -name "*.apk" 2>/dev/null -exec cp {} bin/ \;
-          echo "=== bin/ contents ==="
-          ls -la bin/
-
-      - name: Show build error if failed
+      - name: Show errors if failed
         if: failure()
-        run: |
-          echo "=== FIRST BUILD ERRORS (with context) ==="
-          grep -n -m 4 -B 3 -A 8 -E "error:|What went wrong|ModuleNotFoundError|Traceback" /tmp/buildozer_full.txt | cut -c1-300
+        run: grep -n -m 5 -B 5 -A 10 -E "error:|Traceback|No matching" /tmp/buildozer_full.txt | cut -c1-300
 
-      - name: Find APK
-        if: always()
-        run: |
-          echo "=== Contents of bin/ ==="
-          ls -la bin/ 2>/dev/null || echo "bin/ not found"
-          echo "=== Searching entire workspace for APK ==="
-          find /home/runner/work/Spider-Link -name "*.apk" 2>/dev/null
-          echo "=== FULL BUILDOZER OUTPUT - ERROR SEARCH ==="
-          grep -n "error\|Error\|ERROR\|exception\|FAILED\|stderr\|No such\|cannot\|Cannot\|undefined\|Undefined" \
-            /tmp/buildozer_full.txt 2>/dev/null | tail -50
-          echo "=== LINES 200 BEFORE END ==="
-          tail -200 /tmp/buildozer_full.txt 2>/dev/null | head -150
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: SpiderLink-APK
           path: bin/*.apk
